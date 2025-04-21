@@ -1,0 +1,27 @@
+
+
+# Ignorar archivos binarios y ejecutables
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignorar archivos de estado de Terraform
+terraform.tfstate
+terraform.tfstate.backup
+
+# Ignorar archivos de logs y caché
+*.log
+*.tmp
+*.bak
+
+# Ignorar archivos de configuración local de Terraform
+terraform.tfvars
+terraform.tfvars.json
+
+
+# Ignorar los archivos de Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
