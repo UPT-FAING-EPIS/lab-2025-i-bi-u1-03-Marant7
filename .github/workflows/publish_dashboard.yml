@@ -1,36 +1,44 @@
-name: Publish Power BI Dashboard
+name: Publicar PBIX a Power BI Personal Workspace
 
 on:
   push:
     branches:
       - main
+    paths:
+      - '**.pbix'
 
 jobs:
-  deploy-dashboard:
+  publish-pbix:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
-      - name: Detect changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v12
-        with:
-          separator: ","
-          quotepath: false
+      - name: Instalar dependencias necesarias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
 
-      - name: Deploy Power BI Dashboard via Pipeline
-        uses: nathangiusti/Power-BI-Pipeline-Deploy@v2.5
-        with:
-          files: ${{ steps.changed-files.outputs.all_modified_files }}
-          separator: ","
-          tenant_id: ${{ secrets.TENANT_ID }}
-          config_file: ".github/config/pipeline-deploy-config.yaml"
-          source_stage_order: 0
-          update_app_in_target_workspace: true
-        env:
-          CLIENT_ID: ${{ secrets.CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      - name: Obtener token de autenticación
+        id: auth
+        run: |
+          token_response=$(curl -X POST -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=${{ secrets.CLIENT_ID }}&client_secret=${{ secrets.CLIENT_SECRET }}&resource=https://analysis.windows.net/powerbi/api" \
+            https://login.microsoftonline.com/${{ secrets.TENANT_ID }}/oauth2/token)
+
+          echo "::add-mask::$(echo $token_response | jq -r '.access_token')"
+          echo "access_token=$(echo $token_response | jq -r '.access_token')" >> $GITHUB_OUTPUT
+
+      - name: Subir PBIX a Power BI
+        run: |
+          FILE_NAME="lab03.pbix"
+          ACCESS_TOKEN=${{ steps.auth.outputs.access_token }}
+
+          echo "Publicando $FILE_NAME a Mi área de trabajo..."
+
+          curl -X POST "https://api.powerbi.com/v1.0/myorg/groups/me/imports?datasetDisplayName=lab03&nameConflict=Overwrite" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: multipart/form-data" \
+            -F "file=@$FILE_NAME"
+
