@@ -1,11 +1,7 @@
-name: Publicar PBIX a Power BI Personal Workspace
+name: Publicar PBIX a Power BI Personal Workspace2
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '**.pbix'
+  workflow_dispatch:
 
 jobs:
   publish-pbix:
@@ -20,9 +16,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq curl
 
-      - name: Mostrar archivos disponibles
-        run: ls -la
-
       - name: Obtener token de autenticación
         id: auth
         run: |
@@ -30,14 +23,13 @@ jobs:
             -d "grant_type=client_credentials&client_id=${{ secrets.CLIENT_ID }}&client_secret=${{ secrets.CLIENT_SECRET }}&resource=https://analysis.windows.net/powerbi/api" \
             https://login.microsoftonline.com/${{ secrets.TENANT_ID }}/oauth2/token)
 
-          access_token=$(echo $token_response | jq -r '.access_token')
-          echo "::add-mask::$access_token"
-          echo "access_token=$access_token" >> "$GITHUB_OUTPUT"
+          echo "::add-mask::$(echo $token_response | jq -r '.access_token')"
+          echo "access_token=$(echo $token_response | jq -r '.access_token')" >> $GITHUB_OUTPUT
 
       - name: Subir PBIX a Power BI
         run: |
           FILE_NAME="lab03.pbix"
-          ACCESS_TOKEN="${{ steps.auth.outputs.access_token }}"
+          ACCESS_TOKEN=${{ steps.auth.outputs.access_token }}
 
           echo "Publicando $FILE_NAME a Mi área de trabajo..."
 
